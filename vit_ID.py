@@ -6,8 +6,8 @@ from itertools import repeat
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch._six import container_abcs
-
+#from torch._six import container_abcs
+import collections.abc as container_abcs
 
 # From PyTorch internals
 def _ntuple(n):
@@ -275,7 +275,14 @@ class TransReID(nn.Module):
             param_dict = param_dict['model']
         if 'state_dict' in param_dict:
             param_dict = param_dict['state_dict']
+        else:
+            print("state_dict doesn't exist in param_dict")
+        
+        print("param_dict shape: ", len(param_dict))
+
+
         for k, v in param_dict.items():
+            k = k.replace('base.', '')
             if 'head' in k or 'dist' in k:
                 continue
             if 'patch_embed.proj.weight' in k and len(v.shape) < 4:
@@ -288,11 +295,20 @@ class TransReID(nn.Module):
                     print('distill need to choose right cls token in the pth')
                     v = torch.cat([v[:, 0:1], v[:, 2:]], dim=1)
                 v = resize_pos_embed(v, self.pos_embed, self.patch_embed.num_y, self.patch_embed.num_x)
-            try:
-                self.state_dict()[k].copy_(v)
-            except:
-                print('===========================ERROR=========================')
-                print('shape do not match in k :{}: param_dict{} vs self.state_dict(){}'.format(k, v.shape, self.state_dict()[k].shape))
+            if k in self.state_dict():
+                # Check if the shapes match, if not, print an error message
+                if v.shape == self.state_dict()[k].shape:
+                    # Load the parameter into self.state_dict()
+                    self.state_dict()[k].copy_(v)
+                else:
+                    print(f"Skipping loading of '{k}' due to shape mismatch. Param shape: {v.shape}, Model shape: {self.state_dict()[k].shape}")
+            else:
+                print(f"Skipping loading of '{k}' because it is not found in the model.")
+            #try:
+            #    self.state_dict()[k].copy_(v)
+            #except:
+            #    print('===========================ERROR=========================')
+            #   print('shape do not match in k :{}: param_dict{} vs self.state_dict(){}'.format(k, v.shape, self.state_dict()[k].shape))
 
 
 def resize_pos_embed(posemb, posemb_new, hight, width):
@@ -351,7 +367,7 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
 
 
 def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
-    # type: (Tensor, float, float, float, float) -> Tensor
+    ##type: (Tensor, float, float, float, float) -> Tensor
     r"""Fills the input Tensor with values drawn from a truncated
     normal distribution. The values are effectively drawn from the
     normal distribution :math:`\mathcal{N}(\text{mean}, \text{std}^2)`

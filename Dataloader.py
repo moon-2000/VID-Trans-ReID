@@ -63,9 +63,9 @@ def dataloader(Dataset_name):
     cam_num = dataset.num_train_cams
     view_num = dataset.num_train_vids
 
-   
+    
     train_loader = DataLoader(train_set, batch_size=64,sampler=RandomIdentitySampler(dataset.train, 64,4),num_workers=4, collate_fn=train_collate_fn)
-  
+    
     q_val_set = VideoDataset(dataset.query, seq_len=4, sample='dense', transform=val_transforms)
     g_val_set = VideoDataset(dataset.gallery, seq_len=4, sample='dense', transform=val_transforms)
     
@@ -242,9 +242,9 @@ class VideoDataset(Dataset):
         elif self.sample == 'intelligent_random':
             # frame_indices = range(num)
             indices = []
-            each = max(num//seq_len,1)
-            for  i in range(seq_len):
-                if i != seq_len -1:
+            each = max(num//self.seq_len,1)
+            for  i in range(self.seq_len):
+                if i != self.seq_len -1:
                     indices.append(random.randint(min(i*each , num-1), min( (i+1)*each-1, num-1)) )
                 else:
                     indices.append(random.randint(min(i*each , num-1), num-1) )

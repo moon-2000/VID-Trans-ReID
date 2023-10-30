@@ -1,5 +1,6 @@
 from Dataloader import dataloader
 from VID_Trans_model import VID_Trans
+from visualize_results import visualize_ranked_results
 
 
 from Loss_fun import make_loss
@@ -79,59 +80,76 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, max_rank=21):
     return all_cmc, mAP
 
 def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 5, 10, 20]):
+    # query_loader = q_val_set,            gallery_loader = g_val_set
+    # q_val_set, g_val_set  coming from dataloader('Mars')
+    # q_val_set = VideoDataset()
     model.eval()
-    qf, q_pids, q_camids = [], [], []
+    qf, q_pids, q_camids, q_img_paths = [], [], [], []
+    
     with torch.no_grad():
-      for batch_idx, (imgs, pids, camids,_) in enumerate(queryloader):
-       
-        if use_gpu:
-            imgs = imgs.cuda()
-        imgs = Variable(imgs, volatile=True)
+        for batch_idx, (imgs, pids, camids, img_paths) in enumerate(queryloader):
+            if use_gpu:
+                Q_imgs = imgs.cuda()
+            # imgs = Variable(imgs, volatile=True)
+            with torch.no_grad():
+                Q_imgs = Variable(Q_imgs)
+
+            b,  s, c, h, w = Q_imgs.size()
         
-        b,  s, c, h, w = imgs.size()
-        
-        
-        features = model(imgs,pids,cam_label=camids )
-       
-        features = features.view(b, -1)
-        features = torch.mean(features, 0)
-        features = features.data.cpu()
-        qf.append(features)
-        
-        q_pids.append(pids)
-        q_camids.extend(camids)
-      qf = torch.stack(qf)
-      q_pids = np.asarray(q_pids)
-      q_camids = np.asarray(q_camids)
-      print("Extracted features for query set, obtained {}-by-{} matrix".format(qf.size(0), qf.size(1)))
-      gf, g_pids, g_camids = [], [], []
-      for batch_idx, (imgs, pids, camids,_) in enumerate(galleryloader):
-        if use_gpu:
-            imgs = imgs.cuda()
-        imgs = Variable(imgs, volatile=True)
-        b, s,c, h, w = imgs.size()
-        features = model(imgs,pids,cam_label=camids)
-        features = features.view(b, -1)
-        if pool == 'avg':
+            features = model(Q_imgs,pids,cam_label=camids ) 
+            features = features.view(b, -1)
             features = torch.mean(features, 0)
-        else:
-            features, _ = torch.max(features, 0)
-        features = features.data.cpu()
-        gf.append(features)
-        g_pids.append(pids)
-        g_camids.extend(camids)
-    gf = torch.stack(gf)
-    g_pids = np.asarray(g_pids)
-    g_camids = np.asarray(g_camids)
-    print("Extracted features for gallery set, obtained {}-by-{} matrix".format(gf.size(0), gf.size(1)))
+            features = features.data.cpu()
+            qf.append(features)
+            
+            q_pids.append(pids)
+            q_camids.extend(camids)
+            q_img_paths.extend(img_paths)
+            
+        qf = torch.stack(qf)
+        q_pids = np.asarray(q_pids)
+        q_camids = np.asarray(q_camids)
+        q_img_paths = np.asarray(q_img_paths)
+        print("Extracted features for query set, obtained {}-by-{} matrix".format(qf.size(0), qf.size(1)))
+    
+        gf, g_pids, g_camids, g_img_paths = [], [], [], []
+
+        for batch_idx, (imgs, pids, camids, img_paths) in enumerate(galleryloader):
+            if use_gpu:
+                G_imgs = imgs.cuda()
+            
+            #imgs = Variable(imgs, volatile=True)
+            with torch.no_grad():
+                G_imgs = Variable(G_imgs)
+
+            b, s,c, h, w = G_imgs.size()
+            features = model(G_imgs,pids,cam_label=camids)
+            features = features.view(b, -1)
+            if pool == 'avg':
+                features = torch.mean(features, 0)
+            else:
+                features, _ = torch.max(features, 0)
+            features = features.data.cpu()
+            gf.append(features)
+            g_pids.append(pids)
+            g_camids.extend(camids)
+            g_img_paths.extend(img_paths)
+
+        gf = torch.stack(gf)
+        g_pids = np.asarray(g_pids)
+        g_camids = np.asarray(g_camids)
+        g_img_paths = np.asarray(g_img_paths)
+        print("Extracted features for gallery set, obtained {}-by-{} matrix".format(gf.size(0), gf.size(1)))
+    
     print("Computing distance matrix")
     m, n = qf.size(0), gf.size(0)
-    distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) +               torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
+    distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
     distmat.addmm_(1, -2, qf, gf.t())
     distmat = distmat.numpy()
     gf = gf.numpy()
     qf = qf.numpy()
     
+
     print("Original Computing CMC and mAP")
     cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     
@@ -140,6 +158,18 @@ def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 
     
     print("mAP: {:.1%} ".format(mAP))
     print("CMC curve r1:",cmc[0])
+
+    # TO visualize the results - on MARS
+    # Get the query and gallery data
+    query_data = (q_img_paths, q_pids, q_camids)
+    gallery_data =(g_img_paths, g_pids, g_camids) 
+
+    # img_paths, pid, camid = self.dataset[index]
+
+    # Visualize the results
+    visualize_ranked_results(distmat, (query_data, gallery_data), "video", width=128, height=256, save_dir='', topk=10)
+    print("Visualization of ranked results finished (supposedly) successfully") 
+
     
     return cmc[0], mAP
 
@@ -155,10 +185,9 @@ if __name__ == '__main__':
     Dataset_name=args.Dataset_name
     pretrainpath=args.model_path
 
-  
 
     train_loader,  num_query, num_classes, camera_num, view_num,q_val_set,g_val_set = dataloader(Dataset_name)
-    model = VID_Trans( num_classes=num_classes, camera_num=camera_num,pretrainpath=None)
+    model = VID_Trans( num_classes=num_classes, camera_num=camera_num,pretrainpath=pretrainpath)
 
     device = "cuda"
     model=model.to(device)
@@ -166,7 +195,6 @@ if __name__ == '__main__':
     checkpoint = torch.load(pretrainpath)
     model.load_state_dict(checkpoint)
 
-    
     model.eval()
     cmc,map = test(model, q_val_set,g_val_set)
     print('CMC: %.4f, mAP : %.4f'%(cmc,map))

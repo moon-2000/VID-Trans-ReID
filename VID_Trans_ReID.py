@@ -18,16 +18,10 @@ import torch.nn as nn
 from torch_ema import ExponentialMovingAverage
 from torch.cuda import amp
 import torch.distributed as dist
-
 from utility import AverageMeter, optimizer,scheduler
+from torch.autograd import Variable      
 
 
-
-   
-        
-
-       
-from torch.autograd import Variable              
 def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, max_rank=21):
     num_q, num_g = distmat.shape
     if num_g < max_rank:
@@ -77,50 +71,54 @@ def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, max_rank=21):
     all_cmc = all_cmc.sum(0) / num_valid_q
     mAP = np.mean(all_AP)
 
+
     return all_cmc, mAP
 
 def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 5, 10, 20]):
     model.eval()
     qf, q_pids, q_camids = [], [], []
     with torch.no_grad():
-      for batch_idx, (imgs, pids, camids,_) in enumerate(queryloader):
-       
-        if use_gpu:
-            imgs = imgs.cuda()
-        imgs = Variable(imgs, volatile=True)
+        for batch_idx, (imgs, pids, camids,_) in enumerate(queryloader):  
+            if use_gpu:
+                imgs = imgs.cuda()
         
-        b,  s, c, h, w = imgs.size()
-        
-        
-        features = model(imgs,pids,cam_label=camids )
-       
-        features = features.view(b, -1)
-        features = torch.mean(features, 0)
-        features = features.data.cpu()
-        qf.append(features)
-        
-        q_pids.append(pids)
-        q_camids.extend(camids)
-      qf = torch.stack(qf)
-      q_pids = np.asarray(q_pids)
-      q_camids = np.asarray(q_camids)
-      print("Extracted features for query set, obtained {}-by-{} matrix".format(qf.size(0), qf.size(1)))
-      gf, g_pids, g_camids = [], [], []
-      for batch_idx, (imgs, pids, camids,_) in enumerate(galleryloader):
-        if use_gpu:
-            imgs = imgs.cuda()
-        imgs = Variable(imgs, volatile=True)
-        b, s,c, h, w = imgs.size()
-        features = model(imgs,pids,cam_label=camids)
-        features = features.view(b, -1)
-        if pool == 'avg':
+            #imgs = Variable(imgs, volatile=True)
+            with torch.no_grad():
+                imgs = Variable(imgs)
+
+            b,  s, c, h, w = imgs.size()
+            features = model(imgs,pids,cam_label=camids )
+            
+            features = features.view(b, -1)
             features = torch.mean(features, 0)
-        else:
-            features, _ = torch.max(features, 0)
-        features = features.data.cpu()
-        gf.append(features)
-        g_pids.append(pids)
-        g_camids.extend(camids)
+            features = features.data.cpu()
+            qf.append(features)
+            
+            q_pids.append(pids)
+            q_camids.extend(camids)
+        qf = torch.stack(qf)
+        q_pids = np.asarray(q_pids)
+        q_camids = np.asarray(q_camids)
+        print("Extracted features for query set, obtained {}-by-{} matrix".format(qf.size(0), qf.size(1)))
+        gf, g_pids, g_camids = [], [], []
+        for batch_idx, (imgs, pids, camids,_) in enumerate(galleryloader):
+            if use_gpu:
+                imgs = imgs.cuda()
+            #imgs = Variable(imgs, volatile=True)
+            with torch.no_grad():
+                imgs = Variable(imgs)
+            
+            b, s,c, h, w = imgs.size()
+            features = model(imgs,pids,cam_label=camids)
+            features = features.view(b, -1)
+            if pool == 'avg':
+                features = torch.mean(features, 0)
+            else:
+                features, _ = torch.max(features, 0)
+            features = features.data.cpu()
+            gf.append(features)
+            g_pids.append(pids)
+            g_camids.extend(camids)
     gf = torch.stack(gf)
     g_pids = np.asarray(g_pids)
     g_camids = np.asarray(g_camids)
@@ -136,6 +134,7 @@ def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 
     print("Original Computing CMC and mAP")
     cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
     
+    
     # print("Results ---------- {:.1%} ".format(distmat_rerank))
     print("Results ---------- ")
     
@@ -145,11 +144,13 @@ def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 
     return cmc[0], mAP
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="VID-Trans-ReID")
     parser.add_argument(
         "--Dataset_name", default="", help="The name of the DataSet", type=str)
+    parser.add_argument(
+        "--ViT_path", default="", help="The name of the pretrained model", type=str)
+        
     args = parser.parse_args()
     Dataset_name=args.Dataset_name
     torch.manual_seed(1234)
@@ -160,8 +161,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True    
     train_loader,  num_query, num_classes, camera_num, view_num,q_val_set,g_val_set = dataloader(Dataset_name)
-    model = VID_Trans( num_classes=num_classes, camera_num=camera_num,pretrainpath=pretrainpath)
-    
+    model = VID_Trans( num_classes=num_classes, camera_num=camera_num,pretrainpath=args.ViT_path)
     loss_fun,center_criterion= make_loss( num_classes=num_classes)
     optimizer_center = torch.optim.SGD(center_criterion.parameters(), lr= 0.5)
     
@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
     #Train
     device = "cuda"
-    epochs = 120
+    epochs = 20 # 120
     model=model.to(device)
     ema = ExponentialMovingAverage(model.parameters(), decay=0.995)
     loss_meter = AverageMeter()
@@ -230,13 +230,17 @@ if __name__ == '__main__':
                             .format(epoch, (Epoch_n + 1), len(train_loader),
                                     loss_meter.avg, acc_meter.avg, scheduler._get_lr(epoch)[0]))
 
-        if (epoch+1)%10 == 0 :
-               
-               model.eval()
-               cmc,map = test(model, q_val_set,g_val_set)
-               print('CMC: %.4f, mAP : %.4f'%(cmc,map))
-               if cmc_rank1 < cmc:
-                  cmc_rank1=cmc
-                  torch.save(model.state_dict(),os.path.join('/VID-Trans-ReID',  Dataset_name+'Main_Model.pth')) 
+        # Create the directory if it does not exist
+        save_directory = '/content/drive/MyDrive/Colab_Notebooks/VID/VID-Trans-ReID/checkpoints'
+        os.makedirs(save_directory, exist_ok=True)
         
-     
+        if (epoch+1)%10 == 0 :
+            model.eval()
+            cmc,map = test(model, q_val_set,g_val_set)
+            print('CMC: %.4f, mAP : %.4f'%(cmc,map))
+            
+            if cmc_rank1 < cmc:
+                cmc_rank1=cmc
+                torch.save(model.state_dict(),os.path.join(save_directory,  Dataset_name+'Main_Model.pth')) 
+        
+    
