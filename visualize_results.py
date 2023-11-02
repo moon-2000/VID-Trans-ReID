@@ -15,7 +15,7 @@ BW = 5 # border width
 GREEN = (0, 255, 0)
 RED = (0, 0, 255)
 
-mkdir_if_missing = lambda x: os.makedirs('/content/drive/MyDrive/Colab_Notebooks/VID/VID-Trans-ReID/results/' + x, exist_ok=True)
+mkdir_if_missing = lambda x: os.makedirs('/content/VID-Trans-ReID/' + x, exist_ok=True)
 
 def visualize_ranked_results(
     distmat, dataset, data_type, width=128, height=256, save_dir='', topk=10
