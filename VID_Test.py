@@ -161,13 +161,14 @@ def test(model, queryloader, galleryloader, pool='avg', use_gpu=True, ranks=[1, 
 
     # TO visualize the results - on MARS
     # Get the query and gallery data
-    query_data = (q_img_paths, q_pids, q_camids)
-    gallery_data =(g_img_paths, g_pids, g_camids) 
+    # query_data = (q_img_paths, q_pids, q_camids)
+    # gallery_data =(g_img_paths, g_pids, g_camids) 
 
     # img_paths, pid, camid = self.dataset[index]
 
     # Visualize the results
-    visualize_ranked_results(distmat, (query_data, gallery_data), "video", width=128, height=256, save_dir='', topk=10)
+    print(f"visualizing results for {Dataset_name} has started now!")
+    visualize_ranked_results(distmat, (queryloader, galleryloader), "video", width=128, height=256, save_dir='', topk=10)
     print("Visualization of ranked results finished (supposedly) successfully") 
 
     
