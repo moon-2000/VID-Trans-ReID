@@ -300,10 +300,7 @@ class TransReID(nn.Module):
                 if v.shape == self.state_dict()[k].shape:
                     # Load the parameter into self.state_dict()
                     self.state_dict()[k].copy_(v)
-                else:
-                    print(f"Skipping loading of '{k}' due to shape mismatch. Param shape: {v.shape}, Model shape: {self.state_dict()[k].shape}")
-            else:
-                print(f"Skipping loading of '{k}' because it is not found in the model.")
+            
             #try:
             #    self.state_dict()[k].copy_(v)
             #except:

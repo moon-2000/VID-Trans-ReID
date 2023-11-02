@@ -231,7 +231,7 @@ if __name__ == '__main__':
                                     loss_meter.avg, acc_meter.avg, scheduler._get_lr(epoch)[0]))
 
         # Create the directory if it does not exist
-        save_directory = '/content/drive/MyDrive/Colab_Notebooks/VID/VID-Trans-ReID/checkpoints'
+        save_directory = '/content/VID-Trans-ReID/checkpoints'
         os.makedirs(save_directory, exist_ok=True)
         
         if (epoch+1)%10 == 0 :
