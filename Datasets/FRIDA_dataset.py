@@ -1,70 +1,79 @@
-from __future__ import print_function, absolute_import
-from collections import defaultdict
+import os
 import json
-import glob
-import os.path as osp
-import numpy as np
-
-def read_json(fpath):
-    with open(fpath, 'r') as f:
-        obj = json.load(f)
-    return obj
+from collections import defaultdict
 
 class FRIDA(object):
-    root = "FRIDA"  # Update this path to the root directory of the FRIDA dataset
-    annotations_path = osp.join(root, "annotations.json")  # Path to FRIDA annotations file
-
-    def __init__(self, min_seq_len=0):
+    """
+    FRIDA Dataset
+    Args:
+        data_dir (str): Path to the root directory of FRIDA dataset.
+        min_seq_len (int): Tracklet with length shorter than this value will be discarded (default: 0).
+    """
+    def __init__(self, data_dir = '/content/FRIDA', min_seq_len=0):
+        self.data_dir = data_dir
+        self.train_dirs = [f"Segment_{i + 1}" for i in range(4)]  # FRIDA has 4 segments
+        self.cameras = ['Camera_1', 'Camera_2', 'Camera_3']  # FRIDA has 3 cameras
         self._check_before_run()
-        annotations = read_json(self.annotations_path)
 
-        tracklets, num_tracklets, num_pids, num_imgs_per_tracklet = self._process_data(annotations)
+        self.train, num_train_tracklets, num_train_pids, num_imgs_train = \
+            self._process_data(self.train_dirs)
         
-        num_imgs_per_tracklet = np.array(num_imgs_per_tracklet)
-        min_num = np.min(num_imgs_per_tracklet)
-        max_num = np.max(num_imgs_per_tracklet)
-        avg_num = np.mean(num_imgs_per_tracklet)
+        num_imgs_per_tracklet = num_imgs_train
+        min_num = min(num_imgs_per_tracklet)
+        max_num = max(num_imgs_per_tracklet)
+        avg_num = sum(num_imgs_per_tracklet) / num_train_tracklets
 
-        num_total_pids = num_pids
-        num_total_tracklets = num_tracklets
+        num_total_pids = num_train_pids
+        num_total_tracklets = num_train_tracklets
 
         print("=> FRIDA loaded")
         print("Dataset statistics:")
         print("  ------------------------------")
         print("  subset   | # ids | # tracklets")
         print("  ------------------------------")
-        print("  train    | {:5d} | {:8d}".format(num_pids, num_tracklets))
+        print("  train    | {:5d} | {:8d}".format(num_train_pids, num_train_tracklets))
         print("  ------------------------------")
         print("  total    | {:5d} | {:8d}".format(num_total_pids, num_total_tracklets))
         print("  number of images per tracklet: {} ~ {}, average {:.1f}".format(min_num, max_num, avg_num))
         print("  ------------------------------")
 
-        self.train = tracklets
-        self.num_train_pids = num_pids
-        self.num_train_cams = 3
-        self.num_train_vids = num_tracklets
+        self.num_train_pids = num_train_pids
+        self.num_train_cams = len(self.cameras)
+        self.num_train_vids = num_train_tracklets
 
     def _check_before_run(self):
         """Check if all files are available before going deeper"""
-        if not osp.exists(self.root):
-            raise RuntimeError("'{}' is not available".format(self.root))
-        if not osp.exists(self.annotations_path):
-            raise RuntimeError("'{}' is not available".format(self.annotations_path))
+        if not os.path.exists(self.data_dir):
+            raise RuntimeError("'{}' is not available".format(self.data_dir))
 
-    def _process_data(self, annotations):
+    def _process_data(self, dirnames):
         tracklets = []
         num_imgs_per_tracklet = []
-        pid_set = set()
+        pid_container = set()
 
-        for segment_id, segment_info in annotations.items():
-            for camera_id, camera_info in segment_info.items():
-                for person_id, frames in camera_info.items():
-                    img_names = [osp.join(self.root, f"{segment_id}/camera{camera_id}/{frame}") for frame in frames]
-                    pid_set.add(person_id)
-                    tracklets.append((img_names, person_id, camera_id - 1))  # Camera IDs in code start from 0
-                    num_imgs_per_tracklet.append(len(img_names))
+        for segment in dirnames:
+            for camera in self.cameras:
+                json_file = os.path.join(self.data_dir, 'Annotations', segment, camera, 'data2.json')
+                with open(json_file, 'r') as f:
+                    data = json.load(f)
+                
+                for frame_info in data:
+                    img_name = frame_info['file_name']
+                    pid = frame_info['person_id']
+                    pid_container.add(pid)
+                    img_path = os.path.join(self.data_dir, 'BBs', segment, pid.zfill(8), camera, img_name)
+                    tracklets.append((img_path, pid, self.cameras.index(camera)))
+                    num_imgs_per_tracklet.append(1)
 
         num_tracklets = len(tracklets)
-        num_pids = len(pid_set)
+        num_pids = len(pid_container)
 
         return tracklets, num_tracklets, num_pids, num_imgs_per_tracklet
+
+# Example Usage:
+# data_dir = 'path/to/FRIDA'
+# frida = FRIDA(data_dir)
+# train_data = frida.train
+# num_train_pids = frida.num_train_pids
+# num_train_cams = frida.num_train_cams
+# num_train_vids = frida.num_train_vids

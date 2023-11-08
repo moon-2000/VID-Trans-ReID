@@ -15,11 +15,13 @@ from utility import RandomIdentitySampler,RandomErasing3
 from Datasets.MARS_dataset import Mars
 from Datasets.iLDSVID import iLIDSVID
 from Datasets.PRID_dataset import PRID
+from Datasets.FRIDA_dataset import FRIDA
 
 __factory = {
     'Mars':Mars,
     'iLIDSVID':iLIDSVID,
-    'PRID':PRID
+    'PRID':PRID,
+    'FRIDA':FRIDA
 }
 
 def train_collate_fn(batch):
