@@ -28,19 +28,7 @@ class FRIDA(object):
         num_total_pids = num_train_pids + num_test_pids
         num_total_tracklets = num_train_tracklets + num_test_tracklets
 
-        print("=> FRIDA loaded")
-        print("Dataset statistics:")
-        print("  ------------------------------")
-        print("  subset   | # ids | # tracklets")
-        print("  ------------------------------")
-        print("  train    | {:5d} | {:8d}".format(num_train_pids, num_train_tracklets))
-        print("  test     | {:5d} | {:8d}".format(num_test_pids, num_test_tracklets))
-        print("  ------------------------------")
-        print("  total    | {:5d} | {:8d}".format(num_total_pids, num_total_tracklets))
-        print("  number of images per tracklet: {} ~ {}, average {:.1f}".format(min_num, max_num, avg_num))
-        print("  ------------------------------")
-
-        self.train = self._create_query_gallery(self.train)
+        self.train,  = self._create_query_gallery(self.train)
         self.test = self._create_query_gallery(self.test)
 
         self.num_train_pids = num_train_pids
@@ -49,6 +37,25 @@ class FRIDA(object):
         self.num_test_cams = len(self.cameras)
         self.num_train_vids = num_train_tracklets
         self.num_test_vids = num_test_tracklets
+
+        print("=> FRIDA loaded")
+        print("Dataset statistics:")
+        print("  ------------------------------")
+        print("  subset   | # ids | # tracklets")
+        print("  ------------------------------")
+        print("  train    | {:5d} | {:8d}".format(self.num_train_pids, self.num_train_vids))
+        print("  query    | {:5d} | {:8d}".format(self.train[1], len(self.train[0]['query'])))
+        print("  gallery  | {:5d} | {:8d}".format(self.train[2], len(self.train[0]['gallery'])))
+        print("  test    | {:5d} | {:8d}".format(self.num_test_pids, self.num_test_vids))
+        print("  query    | {:5d} | {:8d}".format(self.test[1], len(self.test[0]['query'])))
+        print("  gallery  | {:5d} | {:8d}".format(self.test[2], len(self.test[0]['gallery'])))
+    
+        print("  ------------------------------")
+        print("  total    | {:5d} | {:8d}".format(num_total_pids, num_total_tracklets))
+        print("  number of images per tracklet: {} ~ {}, average {:.1f}".format(min_num, max_num, avg_num))
+        print("  ------------------------------")
+
+        
 
     def _check_before_run(self):
         """Check if all files are available before going deeper"""
@@ -95,3 +102,17 @@ class FRIDA(object):
 
         return tracklets_train, tracklets_test, num_train_tracklets, num_test_tracklets, \
                 num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
+
+
+def _create_query_gallery(self, tracklets):
+        gallery = defaultdict(dict)
+        query = defaultdict(dict)
+
+        for tracklet in tracklets:
+            img_path, person_id, camera_idx = tracklet
+            if camera_idx == 0:  # Camera A
+                query[person_id][camera_idx] = img_path
+            else:  # Cameras B and C
+                gallery[person_id][camera_idx] = img_path
+
+        return {'query': query, 'gallery': gallery}, len(query), len(gallery)
