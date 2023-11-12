@@ -104,7 +104,7 @@ class FRIDA(object):
                 num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
 
 
-def _create_query_gallery(self, tracklets):
+    def _create_query_gallery(self, tracklets):
         gallery = defaultdict(dict)
         query = defaultdict(dict)
 
