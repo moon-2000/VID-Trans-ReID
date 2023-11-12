@@ -44,11 +44,11 @@ class PRID(object):
         print("# train identites: {}, # test identites {}".format(len(train_dirs), len(test_dirs)))
 
         train, num_train_tracklets, num_train_pids, num_imgs_train = \
-          self._process_data(train_dirs, cam1=True, cam2=True)
+            self._process_data(train_dirs, cam1=True, cam2=True)
         query, num_query_tracklets, num_query_pids, num_imgs_query = \
-          self._process_data(test_dirs, cam1=True, cam2=False)
+            self._process_data(test_dirs, cam1=True, cam2=False)
         gallery, num_gallery_tracklets, num_gallery_pids, num_imgs_gallery = \
-          self._process_data(test_dirs, cam1=False, cam2=True)
+            self._process_data(test_dirs, cam1=False, cam2=True)
 
         num_imgs_per_tracklet = num_imgs_train + num_imgs_query + num_imgs_gallery
         min_num = np.min(num_imgs_per_tracklet)
