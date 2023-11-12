@@ -60,7 +60,14 @@ class FRIDA(object):
         tracklets_test = []
         num_imgs_per_tracklet_train = []
         num_imgs_per_tracklet_test = []
-        pid_container = set()
+        pid_container = list(range(20))  # Assuming 20 persons in total
+
+        # Randomly shuffle the list of person IDs
+        random.shuffle(pid_container)
+
+        # Select the first num_train_ids for training, and the rest for testing
+        selected_persons_train = pid_container[:num_train_ids]
+        selected_persons_test = pid_container[num_train_ids:]
 
         for segment in dirnames:
             for camera in self.cameras:
@@ -68,27 +75,23 @@ class FRIDA(object):
                 with open(json_file, 'r') as f:
                     data = json.load(f)
 
-                all_persons = list(data)
-                selected_persons = random.sample(all_persons, num_train_ids)
-
                 for person_info in data:
-                    img_id = person_info['file_name']
+                    img_id = person_info['fimage_id']
                     pid = person_info['person_id']
                     person_id = f'person_{str(pid).zfill(2)}'  # Convert integer ID to zero-padded string
-                    pid_container.add(person_id)  # Use the zero-padded ID for consistency
-                    img_path = os.path.join(self.data_dir, 'BBs', segment, person_id, camera, img_id)
+                    img_path = os.path.join(self.data_dir, 'BBs', segment, img_id, camera, person_id)
 
-                    if person_info in selected_persons:
+                    if pid in selected_persons_train:
                         tracklets_train.append((img_path, person_id, self.cameras.index(camera)))
                         num_imgs_per_tracklet_train.append(1)
-                    else:
+                    elif pid in selected_persons_test:
                         tracklets_test.append((img_path, person_id, self.cameras.index(camera)))
                         num_imgs_per_tracklet_test.append(1)
 
         num_train_tracklets = len(tracklets_train)
         num_test_tracklets = len(tracklets_test)
-        num_train_pids = len(pid_container)
-        num_test_pids = num_train_pids
+        num_train_pids = len(selected_persons_train)
+        num_test_pids = len(selected_persons_test)
 
         return tracklets_train, tracklets_test, num_train_tracklets, num_test_tracklets, \
                 num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
