@@ -68,14 +68,16 @@ class FRIDA(object):
                 with open(json_file, 'r') as f:
                     data = json.load(f)
 
-                selected_persons = random.sample(data, num_train_ids)
+                all_persons = list(data)
+                selected_persons = random.sample(all_persons, num_train_ids)
+
                 for person_info in data:
                     img_id = person_info['file_name']
                     pid = person_info['person_id']
                     person_id = f'person_{str(pid).zfill(2)}'  # Convert integer ID to zero-padded string
                     pid_container.add(person_id)  # Use the zero-padded ID for consistency
                     img_path = os.path.join(self.data_dir, 'BBs', segment, person_id, camera, img_id)
-                    
+
                     if person_info in selected_persons:
                         tracklets_train.append((img_path, person_id, self.cameras.index(camera)))
                         num_imgs_per_tracklet_train.append(1)
@@ -86,7 +88,7 @@ class FRIDA(object):
         num_train_tracklets = len(tracklets_train)
         num_test_tracklets = len(tracklets_test)
         num_train_pids = len(pid_container)
-        num_test_pids = len(pid_container) - num_train_pids
+        num_test_pids = num_train_pids
 
         return tracklets_train, tracklets_test, num_train_tracklets, num_test_tracklets, \
                 num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
