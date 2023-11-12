@@ -39,22 +39,22 @@ class FRIDA(object):
 
         # self.train = self._create_query_gallery(self.train)
         query_gallery_test = self._create_query_gallery(self.test)
-        query = query_gallery_test[0]['query']
-        gallery = query_gallery_test[0]['gallery']
+        self.query = query_gallery_test[0]['query']
+        self.gallery = query_gallery_test[0]['gallery']
 
         num_query_tracklets = query_gallery_test[1]
         num_gallery_tracklets = query_gallery_test[2]
         num_query_pids = query_gallery_test[3]
         num_gallery_pids = query_gallery_test[4]
         
-        
+
         print("=> FRIDA loaded")
         print("Dataset statistics:")
         print("  ------------------------------")
         print("  subset   | # ids | # tracklets")
         print("  ------------------------------")
         print("  train    | {:5d} | {:8d}".format(self.num_train_pids, self.num_train_vids))
-        print("  test    | {:5d} | {:8d}".format(self.num_test_pids, self.num_test_vids))
+        print("  test     | {:5d} | {:8d}".format(self.num_test_pids, self.num_test_vids))
         print("  query    | {:5d} | {:8d}".format(num_query_pids, num_query_tracklets))
         print("  gallery  | {:5d} | {:8d}".format(num_gallery_pids, num_gallery_tracklets))
 
