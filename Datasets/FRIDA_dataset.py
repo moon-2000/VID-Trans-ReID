@@ -69,7 +69,6 @@ class FRIDA(object):
                     data = json.load(f)
 
                 selected_persons = random.sample(data, num_train_ids)
-                
                 for person_info in data:
                     img_id = person_info['file_name']
                     pid = person_info['person_id']
@@ -89,17 +88,5 @@ class FRIDA(object):
         num_train_pids = len(pid_container)
         num_test_pids = len(pid_container) - num_train_pids
 
-        return tracklets_train, tracklets_test, num_train_tracklets, num_test_tracklets, num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
-
-    def _create_query_gallery(self, tracklets):
-        gallery = defaultdict(dict)
-        query = defaultdict(dict)
-
-        for tracklet in tracklets:
-            img_path, person_id, camera_idx = tracklet
-            if camera_idx == 0:  # Camera A
-                query[person_id][camera_idx] = img_path
-            else:  # Cameras B and C
-                gallery[person_id][camera_idx] = img_path
-
-        return {'query': query, 'gallery': gallery}
+        return tracklets_train, tracklets_test, num_train_tracklets, num_test_tracklets, \
+                num_train_pids, num_test_pids, num_imgs_per_tracklet_train, num_imgs_per_tracklet_test
