@@ -160,6 +160,7 @@ class Mars(object):
         pid_list = list(set(meta_data[:,2].tolist()))
         num_pids = len(pid_list)
         if relabel: pid2label = {pid:label for label, pid in enumerate(pid_list)}
+        
         for tracklet_idx in range(num_tracklets):
             data = meta_data[tracklet_idx,...]
             start_index, end_index, pid, camid = data
