@@ -108,8 +108,11 @@ class FRIDA(object):
 
 
     def _create_query_gallery(self, tracklets):
-        gallery = defaultdict(dict)
-        query = defaultdict(dict)
+        # gallery = defaultdict(dict)
+        # query = defaultdict(dict)
+
+        query = []
+        gallery = []
 
         tracklet_query, tracklet_gallery = 0, 0    
         num_query_pids, num_gallery_pids = set(), set()
@@ -117,15 +120,16 @@ class FRIDA(object):
         for tracklet in tracklets:
             img_path, person_id, camera_idx = tracklet
             if camera_idx == 0:  # Camera A
-                query[person_id][camera_idx] = img_path
+                #query[person_id][camera_idx] = img_path
+                query.append(tracklet)
                 tracklet_query += 1
                 num_query_pids.add(person_id)
             else:  # Cameras B and C
-                gallery[person_id][camera_idx] = img_path
+                #gallery[person_id][camera_idx] = img_path
+                gallery.append(tracklet)
                 tracklet_gallery += 1
                 num_gallery_pids.add(person_id)
 
-        #return {'query': query, 'gallery': gallery}, tracklet_query, tracklet_gallery, len(list(num_query_pids)), len(list(num_gallery_pids))
         query_result = {
                         'query': query,
                         'gallery': gallery,
