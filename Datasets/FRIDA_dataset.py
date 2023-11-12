@@ -76,7 +76,7 @@ class FRIDA(object):
                     data = json.load(f)
 
                 for person_info in data:
-                    img_id = person_info['fimage_id']
+                    img_id = person_info['image_id']
                     pid = person_info['person_id']
                     person_id = f'person_{str(pid).zfill(2)}'  # Convert integer ID to zero-padded string
                     img_path = os.path.join(self.data_dir, 'BBs', segment, img_id, camera, person_id)
