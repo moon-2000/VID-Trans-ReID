@@ -110,6 +110,7 @@ class VideoDataset(Dataset):
     def __getitem__(self, index):
         img_paths, pid, camid = self.dataset[index]
         num = len(img_paths)
+        img_paths
 
         # if self.sample == 'restricted_random':
         #     frame_indices = range(num)
@@ -140,7 +141,7 @@ class VideoDataset(Dataset):
             targt_cam=[]
             for index in indices:
                 index=int(index)
-                img_path = img_paths[index]
+                img_path = img_paths   # img_paths[index] as it has the image path without being in a list in the tracklet
                 img = read_image(img_path)
                 if self.transform is not None:
                     img = self.transform(img)

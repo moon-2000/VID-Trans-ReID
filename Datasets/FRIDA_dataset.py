@@ -90,7 +90,7 @@ class FRIDA(object):
                     img_id = person_info['image_id']
                     pid = person_info['person_id']
                     person_id = f'person_{str(pid).zfill(2)}'  # Convert integer ID to zero-padded string
-                    img_path = os.path.join(self.data_dir, 'BBs', segment, img_id, camera, person_id)
+                    img_path = os.path.join(self.data_dir, 'BBs', segment, img_id, camera, f'{person_id}.jpg')
 
                     if pid in selected_persons_train:
                         tracklets_train.append((img_path, person_id, self.cameras.index(camera)))
