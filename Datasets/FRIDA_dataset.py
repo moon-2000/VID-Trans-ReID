@@ -38,14 +38,15 @@ class FRIDA(object):
         self.num_test_vids = num_test_tracklets
 
         # self.train = self._create_query_gallery(self.train)
-        query_gallery_test = self._create_query_gallery(self.test)
-        self.query = query_gallery_test['query']
-        self.gallery = query_gallery_test['gallery']
+        print(f"First 3 tracklets in train: {self.train[:3]}")
 
-        num_query_tracklets = query_gallery_test['num_query_tracklets']
-        num_gallery_tracklets = query_gallery_test['num_gallery_tracklets']
-        num_query_pids = query_gallery_test['num_query_pids']
-        num_gallery_pids = query_gallery_test['num_gallery_pids']
+        query, gallery, tracklet_query, tracklet_gallery, num_query_pids, num_gallery_pids =  self._create_query_gallery(self.test)
+        self.query = query
+        self.gallery = gallery
+        print(f"First 3 tracklets in query: {self.query[:3]}")
+        
+        num_query_tracklets = tracklet_query
+        num_gallery_tracklets =  tracklet_gallery
         
 
         print("=> FRIDA loaded")
@@ -130,12 +131,8 @@ class FRIDA(object):
                 tracklet_gallery += 1
                 num_gallery_pids.add(person_id)
 
-        query_result = {
-                        'query': query,
-                        'gallery': gallery,
-                        'num_query_tracklets': tracklet_query,
-                        'num_gallery_tracklets': tracklet_gallery,
-                        'num_query_pids': len(list(num_query_pids)),
-                        'num_gallery_pids': len(list(num_gallery_pids))
-                    }
-        return query_result
+        num_query_pids =  len(list(num_query_pids))
+        num_gallery_pids = len(list(num_gallery_pids))
+
+        return query, gallery, tracklet_query, tracklet_gallery, num_query_pids, num_gallery_pids
+        

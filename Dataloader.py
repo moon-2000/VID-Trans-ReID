@@ -71,6 +71,8 @@ def dataloader(Dataset_name):
     q_val_set = VideoDataset(dataset.query, seq_len=4, sample='dense', transform=val_transforms)
     g_val_set = VideoDataset(dataset.gallery, seq_len=4, sample='dense', transform=val_transforms)
     
+    if not q_val_set:
+        print("q_val_set is empty")
     
     return train_loader, len(dataset.query), num_classes, cam_num, view_num,q_val_set,g_val_set
 
