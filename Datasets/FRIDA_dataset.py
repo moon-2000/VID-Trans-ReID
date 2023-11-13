@@ -136,17 +136,17 @@ class FRIDA(object):
         num_query_pids, num_gallery_pids = set(), set()
 
         for tracklet in tracklets:
-            img_path, person_id, camera_idx = tracklet
-            if camera_idx == 0:  # Camera A
-                #query[person_id][camera_idx] = img_path
-                query.append(tracklet)
-                tracklet_query += 1
-                num_query_pids.add(person_id)
-            else:  # Cameras B and C
-                #gallery[person_id][camera_idx] = img_path
-                gallery.append(tracklet)
-                tracklet_gallery += 1
-                num_gallery_pids.add(person_id)
+            for img_path, person_id, camera_idx in tracklet:
+                if camera_idx == 0:  # Camera A
+                    #query[person_id][camera_idx] = img_path
+                    query.append(tracklet)
+                    tracklet_query += 1
+                    num_query_pids.add(person_id)
+                else:  # Cameras B and C
+                    #gallery[person_id][camera_idx] = img_path
+                    gallery.append(tracklet)
+                    tracklet_gallery += 1
+                    num_gallery_pids.add(person_id)
 
         num_query_pids =  len(list(num_query_pids))
         num_gallery_pids = len(list(num_gallery_pids))

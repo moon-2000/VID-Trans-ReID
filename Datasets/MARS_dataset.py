@@ -57,6 +57,9 @@ class Mars(object):
 
         num_total_pids = num_train_pids + num_query_pids
         num_total_tracklets = num_train_tracklets + num_query_tracklets + num_gallery_tracklets
+        
+        print(f"First 3 tracklets in train: {self.train[:3]}")
+        print(f"First 3 tracklets in query: {self.query[:3]}")
 
         print("=> MARS loaded")
         print("Dataset statistics:")
