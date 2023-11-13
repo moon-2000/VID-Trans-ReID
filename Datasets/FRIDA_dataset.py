@@ -104,13 +104,13 @@ class FRIDA(object):
                     person_id = f'person_{str(pid).zfill(2)}'  # Convert integer ID to zero-padded string
                     img_path = os.path.join(self.data_dir, 'BBs', segment, img_id, camera, f'{person_id}.jpg')
 
-                    tracklet = [(img_path, person_id, self.cameras.index(camera))]
+                    tracklet = (img_path, )
 
                     if pid in selected_persons_train:
-                        tracklets_train.append(tracklet)
+                        tracklets_train.append((tracklet), pid, self.cameras.index(camera))
                         num_imgs_per_tracklet_train.append(len(tracklet))
                     elif pid in selected_persons_test:
-                        tracklets_test.append(tracklet)
+                        tracklets_test.append((tracklet), pid, self.cameras.index(camera))
                         num_imgs_per_tracklet_test.append(len(tracklet))
         # Filter out tracklets with fewer images than the specified minimum sequence length
         tracklets_train = [tracklet for tracklet in tracklets_train if len(tracklet) >= min_seq_len]
@@ -136,7 +136,7 @@ class FRIDA(object):
         num_query_pids, num_gallery_pids = set(), set()
 
         for tracklet in tracklets:
-            for img_path, person_id, camera_idx in tracklet:
+            for img_paths, person_id, camera_idx in tracklet:
                 if camera_idx == 0:  # Camera A
                     #query[person_id][camera_idx] = img_path
                     query.append(tracklet)

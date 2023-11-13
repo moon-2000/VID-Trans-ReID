@@ -58,8 +58,7 @@ class Mars(object):
         num_total_pids = num_train_pids + num_query_pids
         num_total_tracklets = num_train_tracklets + num_query_tracklets + num_gallery_tracklets
         
-        print(f"First 3 tracklets in train: {self.train[:3]}")
-        print(f"First 3 tracklets in query: {self.query[:3]}")
+        
 
         print("=> MARS loaded")
         print("Dataset statistics:")
@@ -74,11 +73,17 @@ class Mars(object):
         print("  number of images per tracklet: {} ~ {}, average {:.1f}".format(min_num, max_num, avg_num))
         print("  ------------------------------")
 
+        
+
         # self.train_videos = video
         self.train = train
         self.query = query
         self.gallery = gallery
 
+        print(f"First 3 tracklets in train: {self.train[:3]}")
+        print(f"First 3 tracklets in query: {self.query[:3]}")
+        print(f"First 3 tracklets in gallery: {self.gallery[:3]}")
+        
         self.num_train_pids = num_train_pids
         self.num_query_pids = num_query_pids
         self.num_gallery_pids = num_gallery_pids
