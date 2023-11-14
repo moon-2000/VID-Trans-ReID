@@ -86,7 +86,7 @@ class Attention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
-       
+        
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
@@ -104,7 +104,7 @@ class Attention(nn.Module):
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
-                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+                drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
         super().__init__()
         self.norm1 = norm_layer(dim)
         self.attn = Attention(
@@ -191,12 +191,12 @@ class TransReID(nn.Module):
     """ Transformer-based Object Re-Identification
     """
     def __init__(self, img_size=224, patch_size=16, stride_size=16, in_chans=3, num_classes=1000, embed_dim=768, depth=12,
-                 num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0., camera=0, 
-                 drop_path_rate=0., hybrid_backbone=None, norm_layer=nn.LayerNorm, cam_lambda =3.0):
+                num_heads=12, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_rate=0., attn_drop_rate=0., camera=0, 
+                drop_path_rate=0., hybrid_backbone=None, norm_layer=nn.LayerNorm, cam_lambda =3.0):
         super().__init__()
         self.num_classes = num_classes
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
-       
+        
         self.cam_num = camera
         self.cam_lambda = cam_lambda
 
@@ -205,6 +205,7 @@ class TransReID(nn.Module):
         num_patches = self.patch_embed.num_patches
 
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+        
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.Cam = nn.Parameter(torch.zeros(camera, 1, embed_dim))
 
@@ -218,7 +219,7 @@ class TransReID(nn.Module):
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
             for i in range(depth)])
 
-        self.norm = norm_layer(embed_dim)
+        self.norm = norm_layer(embed_dim) # self.norm = nn.LayerNorm(embed_dim)
 
         # Classifier head
         self.fc = nn.Linear(embed_dim, num_classes) if num_classes > 0 else nn.Identity()
@@ -249,7 +250,7 @@ class TransReID(nn.Module):
 
     def forward_features(self, x, camera_id):
         B = x.shape[0]
-       
+        
         x = self.patch_embed(x)
         
         cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
@@ -322,6 +323,7 @@ def resize_pos_embed(posemb, posemb_new, hight, width):
     posemb_grid = F.interpolate(posemb_grid, size=(hight, width), mode='bilinear')
     posemb_grid = posemb_grid.permute(0, 2, 3, 1).reshape(1, hight * width, -1)
     posemb = torch.cat([posemb_token, posemb_grid], dim=1)
+    
     return posemb
 
 

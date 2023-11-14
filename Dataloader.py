@@ -90,7 +90,17 @@ def read_image(img_path):
     #         print("IOError incurred when reading '{}'. Will redo. Don't worry. Just chill.".format(img_path))
     #         pass
     # return img
+    try:
+        img = Image.open(img_path).convert('RGB')
+        width, height = img.size
+        # print("Dimensions of input image are: {:8d} | {:8d} ".format(width, height))
+        return img
+    except IOError:
+        print("IOError incurred when reading '{}'. Returning None.".format(img_path))
+        return None
     
+
+
 
 class VideoDataset(Dataset):
     """Video Person ReID Dataset.
@@ -187,11 +197,14 @@ class VideoDataset(Dataset):
                     index=int(index)
                     img_path = img_paths[index]
                     img = read_image(img_path)
-                    if self.transform is not None:
-                        img = self.transform(img)
-                    img = img.unsqueeze(0)
-                    imgs.append(img)
-                    targt_cam.append(camid)
+                    if img is not None:
+                        if self.transform is not None:
+                            img = self.transform(img)
+                        img = img.unsqueeze(0)
+                        imgs.append(img)
+                        targt_cam.append(camid)
+                    else:
+                        continue
                 imgs = torch.cat(imgs, dim=0)
                 #imgs=imgs.permute(1,0,2,3)
                 imgs_list.append(imgs)
